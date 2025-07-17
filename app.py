@@ -42,19 +42,27 @@ if uploaded_file:
         st.plotly_chart(fig2, use_container_width=True)
 
     # ---------------------------
-    # Tab 2: Currency & Revenue Analysis
+    # Tab 2: Currency & Revenue Analysis (Improved)
     # ---------------------------
     with tab2:
-        st.subheader("💱 Exchange Rate Volatility")
-        ex_trend = df.groupby(['Date', 'Currency'])['Exchange Rate'].mean().reset_index()
-        fig3 = px.line(ex_trend, x='Date', y='Exchange Rate', color='Currency')
+        st.subheader("💱 Exchange Rate Fluctuation (Heatmap View)")
+        heatmap_data = df.pivot_table(index='Date', columns='Currency', values='Exchange Rate', aggfunc='mean')
+        st.dataframe(heatmap_data.style.background_gradient(cmap='Blues'), use_container_width=True)
+
+        st.subheader("💵 Total Revenue (USD) by Currency")
+        total_usd = df.groupby('Currency')['Revenue (USD)'].sum().reset_index().sort_values(by='Revenue (USD)', ascending=False)
+        fig3 = px.bar(total_usd, x='Currency', y='Revenue (USD)', title='Total Revenue (USD) per Currency',
+                     color='Currency', text_auto='.2s')
         st.plotly_chart(fig3, use_container_width=True)
 
-        st.subheader("💵 Revenue Difference Due to Currency")
+        st.subheader("📉 Revenue Deviation Due to Currency Conversion")
         df['Revenue Diff'] = df['Revenue (USD)'] - (df['Revenue (Local)'] * df['Exchange Rate'])
-        avg_diff = df.groupby('Currency')['Revenue Diff'].mean().reset_index()
-        fig4 = px.bar(avg_diff, x='Currency', y='Revenue Diff',
-                      title='Average Revenue Difference (USD)')
+        rev_dev = df[['Date', 'Currency', 'Revenue Diff']].copy()
+        rev_dev = rev_dev.groupby(['Date', 'Currency'])['Revenue Diff'].mean().reset_index()
+
+        fig4 = px.scatter(rev_dev, x='Date', y='Revenue Diff', color='Currency',
+                          title="Revenue Difference Scatter Over Time",
+                          size=abs(rev_dev['Revenue Diff']) + 1, size_max=20)
         st.plotly_chart(fig4, use_container_width=True)
 
     # ---------------------------
